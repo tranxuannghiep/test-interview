@@ -9,9 +9,13 @@ export function useGetMovies() {
     try {
       const res = await movieService.getMovies()
       setData(res.data.data)
-      setLoading(false)
+      setTimeout(() => {
+        setLoading(false)
+      }, 500)
     } catch (error) {
-      setLoading(false)
+      setTimeout(() => {
+        setLoading(false)
+      }, 500)
       //handle error
     }
   }, [])
