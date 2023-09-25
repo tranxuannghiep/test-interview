@@ -11,6 +11,8 @@ const MovieContext = React.createContext<{
   setSelectedRow: Function
   data: ITransactionMovie | null
   loading: boolean
+  mouseMove: boolean
+  setMouseMove: Function
 } | null>(null)
 
 export const MovieContextProvider: React.FC<{ children: React.ReactNode }> = ({
@@ -18,42 +20,39 @@ export const MovieContextProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const [selectedCol, setSelectedCol] = useState(0)
   const [selectedRow, setSelectedRow] = useState(0)
+  const [mouseMove, setMouseMove] = useState(false)
   const { data, loading } = useGetMovies()
 
   const handleKeyDown = useCallback(
-    (e: any) => {
+    (e: KeyboardEvent) => {
       e.preventDefault()
+      setMouseMove(false)
       if (e.key === 'ArrowUp' && selectedCol > 0) {
-        setSelectedCol((prev) => prev - 1)
+        setSelectedCol((prev) => (prev > 0 ? prev - 1 : prev))
         setSelectedRow(0)
-        window.scroll({
-          top: window.scrollY - 230,
-          left: 0,
-          behavior: 'smooth',
-        })
       } else if (
         e.key === 'ArrowDown' &&
         selectedCol < (data?.totalItems || 0) - 1
       ) {
-        setSelectedCol((prev) => prev + 1)
+        setSelectedCol((prev) =>
+          prev < (data?.totalItems || 0) - 1 ? prev + 1 : prev
+        )
         setSelectedRow(0)
-        window.scroll({
-          top: window.scrollY + 230,
-          left: 0,
-          behavior: 'smooth',
+      } else if (e.key === 'ArrowLeft') {
+        setSelectedRow((prev) => {
+          if (prev > 0 && prev < (data?.items[selectedCol]?.totalItems || 0)) {
+            return prev - 1
+          } else return prev
         })
-      } else if (
-        e.key === 'ArrowLeft' &&
-        selectedRow > 0 &&
-        selectedRow < (data?.items[selectedCol].totalItems || 0)
-      ) {
-        setSelectedRow((prev) => prev - 1)
-      } else if (
-        e.key === 'ArrowRight' &&
-        selectedRow >= 0 &&
-        selectedRow < (data?.items[selectedCol].totalItems || 0) - 1
-      ) {
-        setSelectedRow((prev) => prev + 1)
+      } else if (e.key === 'ArrowRight') {
+        setSelectedRow((prev) => {
+          if (
+            prev >= 0 &&
+            prev < (data?.items[selectedCol]?.totalItems || 0) - 1
+          ) {
+            return prev + 1
+          } else return prev
+        })
       } else if (e.key === 'Enter') {
         if (data?.items?.[selectedCol]?.items?.[selectedRow]?.title) {
           toast.success(data?.items[selectedCol].items[selectedRow].title, {
@@ -95,6 +94,8 @@ export const MovieContextProvider: React.FC<{ children: React.ReactNode }> = ({
         setSelectedRow: setSelectedRow,
         data,
         loading,
+        mouseMove,
+        setMouseMove,
       }}
     >
       {children}
@@ -111,6 +112,8 @@ export const useMovies = () => {
     setSelectedRow: value?.setSelectedRow,
     data: value?.data,
     loading: value?.loading,
+    mouseMove: value?.mouseMove,
+    setMouseMove: value?.setMouseMove,
   }
 }
 

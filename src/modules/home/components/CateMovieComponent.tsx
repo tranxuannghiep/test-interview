@@ -9,17 +9,22 @@ export interface ICateMovieComponentProps {
   data: IMovie
   indexCol: number
 }
+const WIDTH_MOVIE = 228
 const scrollAmount = 500
 export function CateMovieComponent({
   data,
   indexCol,
 }: ICateMovieComponentProps) {
   const { items, title } = data
+  const { selectedCol, selectedRow } = useMovies()
   const containerRef = useRef<HTMLDivElement | null>(null)
   const [isAtLeftmost, setIsAtLeftmost] = useState(true)
   const [isAtRightmost, setIsAtRightmost] = useState(false)
   const [isMouseMove, setIsMouseMove] = useState(false)
-  const { selectedCol, selectedRow } = useMovies()
+  const [arrowAction, setArrowAction] = useState({
+    left: false,
+    right: false,
+  })
 
   const scrollLeft = () => {
     const container = containerRef.current
@@ -56,20 +61,12 @@ export function CateMovieComponent({
         const container = containerRef.current
         if (container) {
           if (e.key === 'ArrowLeft') {
-            container.scrollTo({
-              left: container.scrollLeft - 228,
-              behavior: 'smooth',
-            })
+            setArrowAction({ left: true, right: false })
             setIsAtLeftmost(container.scrollLeft - scrollAmount <= 0)
             setIsAtRightmost(false)
           } else if (e.key === 'ArrowRight') {
-            const newScrollLeft = container.scrollLeft + 228
-            if (((selectedRow || 0) + 1) * 228 > container.clientWidth - 228) {
-              container.scrollTo({
-                left: container.scrollLeft + 228,
-                behavior: 'smooth',
-              })
-            }
+            const newScrollLeft = container.scrollLeft + WIDTH_MOVIE
+            setArrowAction({ left: false, right: true })
             setIsAtLeftmost(false)
             setIsAtRightmost(
               newScrollLeft >= container.scrollWidth - container.clientWidth
@@ -78,7 +75,7 @@ export function CateMovieComponent({
         }
       }
     },
-    [selectedCol, selectedRow, indexCol, containerRef]
+    [selectedCol, indexCol, containerRef]
   )
 
   const debouncedHandleKeyDown = debounce(handleKeyDown, 150)
@@ -93,17 +90,37 @@ export function CateMovieComponent({
   useEffect(() => {
     if (selectedCol === indexCol) {
       const container = containerRef.current
-      if (container) {
-        if (!isMouseMove) {
-          container.scrollTo({
-            left: 0,
-            behavior: 'smooth',
-          })
-        }
+      if (container && !isMouseMove) {
+        container.scrollTo({
+          left: 0,
+          behavior: 'smooth',
+        })
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCol, indexCol, containerRef])
+
+  useEffect(() => {
+    if (selectedCol === indexCol && typeof selectedRow === 'number') {
+      const container = containerRef.current
+      if (container && !isMouseMove) {
+        if (arrowAction.left) {
+          container.scrollTo({
+            left: selectedRow * WIDTH_MOVIE,
+            behavior: 'smooth',
+          })
+        } else if (arrowAction.right) {
+          if (selectedRow * WIDTH_MOVIE > container.clientWidth - WIDTH_MOVIE) {
+            container.scrollTo({
+              left: selectedRow * WIDTH_MOVIE,
+              behavior: 'smooth',
+            })
+          }
+        }
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [containerRef, indexCol, selectedCol, selectedRow, arrowAction])
 
   return (
     <div
